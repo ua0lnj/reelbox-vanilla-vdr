@@ -8,3 +8,5 @@ Last linux.bin can DTS over HDMI.
 
 No DTS-HD, no EAC3, no multichannel AAC, no h.265.
 This is old card now...
+
+Not all plugins works on vdr-2.3.7 and Ubuntu 16.04.
