@@ -1,0 +1,38 @@
+diff -Nupr xine-lib-1-2-vdpau-d6d825f659f6/include/xine/audio_out.h xine-lib-1-2-vdpau-hde/include/xine/audio_out.h
+--- xine-lib-1-2-vdpau-d6d825f659f6/include/xine/audio_out.h	2011-10-18 19:40:01.000000000 +1100
++++ xine-lib-1-2-vdpau-hde/include/xine/audio_out.h	2011-11-06 22:04:43.278262491 +1100
+@@ -351,7 +351,7 @@ int _x_ao_channels2mode( int channels )
+ #define AO_CTRL_FLUSH_BUFFERS	2
+ 
+ /* above that value audio frames are discarded */
+-#define AO_MAX_GAP              15000
++#define AO_MAX_GAP              150000
+ 
+ #ifdef __cplusplus
+ }
+diff -Nupr xine-lib-1-2-vdpau-d6d825f659f6/src/xine-engine/load_plugins.c xine-lib-1-2-vdpau-hde/src/xine-engine/load_plugins.c
+--- xine-lib-1-2-vdpau-d6d825f659f6/src/xine-engine/load_plugins.c	2011-10-18 19:40:01.000000000 +1100
++++ xine-lib-1-2-vdpau-hde/src/xine-engine/load_plugins.c	2011-11-06 22:08:23.614256796 +1100
+@@ -195,6 +195,10 @@ static void map_decoder_list (xine_t *th
+     plugin_node_t *node = xine_sarray_get(decoder_list, list_id);
+     const uint32_t *type = ((decoder_info_t *)node->info->special_info)->supported_types;
+     int priority = get_decoder_priority(this, node);
++    if(priority < 0) {
++      lprintf ("decoder %s disabled\n", node->info->id);
++      continue;
++    }
+ 
+     lprintf ("mapping decoder %s\n", node->info->id);
+ 
+diff -Nupr xine-lib-1-2-vdpau-d6d825f659f6/src/xine-engine/xine.c xine-lib-1-2-vdpau-hde/src/xine-engine/xine.c
+--- xine-lib-1-2-vdpau-d6d825f659f6/src/xine-engine/xine.c	2011-10-18 19:40:01.000000000 +1100
++++ xine-lib-1-2-vdpau-hde/src/xine-engine/xine.c	2011-11-06 22:06:05.026260378 +1100
+@@ -1461,7 +1461,7 @@ static int play_internal (xine_stream_t
+   /* Wait until the first frame produced is displayed
+    * see video_out.c
+    */
+-  wait_first_frame (stream);
++//  wait_first_frame (stream);
+ 
+   xprintf (stream->xine, XINE_VERBOSITY_DEBUG, "play_internal ...done\n");
+ 

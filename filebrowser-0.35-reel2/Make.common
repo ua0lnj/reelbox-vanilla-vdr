@@ -1,0 +1,126 @@
+
+
+### The version number of this plugin (taken from the main source file):
+
+VERSION = $(shell grep 'static const char \*VERSION *=' $(PLUGIN).c | awk '{ print $$6 }' | sed -e 's/[";]//g')
+
+
+### The version number of VDR (taken from VDR's "config.h"):
+
+
+APIVERSION = $(call PKGCFG,apiversion)
+
+VDRLOCALE = $(shell grep '^LOCALEDIR' $(VDRDIR)/Makefile)
+
+
+### The name of the distribution archive:
+
+ARCHIVE = $(PLUGIN)-$(VERSION)
+PACKAGE = vdr-$(ARCHIVE)
+
+
+### Includes and Defines (add further entries here):
+
+DEFINES += -DPLUGIN_NAME_I18N='"$(PLUGIN)"'
+
+#ifdef DEBUG
+#  DEFINES += -DDEBUG
+#  CXXFLAGS += -g
+#endif
+
+#ifdef RBLITE
+#  DEFINES += -DRBLITE
+#endif
+
+#ifdef RBMINI
+#  DEFINES += -DRBMINI
+#endif
+
+#ifdef REELVDR
+#  DEFINES += -DREELVDR
+#endif
+
+### Targets:
+
+#plug: $(SOFILE)
+
+all: $(SOFILE) i18n
+
+### Implicit rules:
+
+%.o: %.c
+	$(CXX) $(CXXFLAGS) -c $(DEFINES) $(INCLUDES) $<
+
+# Dependencies:
+
+MAKEDEP = $(CXX) -MM -MG
+DEPFILE = .dependencies
+$(DEPFILE): Makefile
+	@$(MAKEDEP) $(DEFINES) $(INCLUDES) $(OBJS:%.o=%.c)   > $@
+
+-include $(DEPFILE)
+
+
+### Internationalization (I18N):
+#ifneq ($(strip $(VDRLOCALE)),)
+### do gettext based i18n stuff
+
+PODIR     = po
+I18Npo    = $(wildcard $(PODIR)/*.po)
+I18Nmo    = $(addsuffix .mo, $(foreach file, $(I18Npo), $(basename $(file))))
+I18Nmsgs  = $(addprefix $(LOCDIR)/, $(addsuffix /LC_MESSAGES/vdr-$(PLUGIN).mo, $(notdir $(foreach file, $(I18Npo), $(basename $(file))))))
+I18Npot   = $(PODIR)/$(PLUGIN).pot
+
+%.mo: %.po
+	msgfmt -c -o $@ $<
+
+
+$(I18Npot): $(wildcard *.c *.h)
+	xgettext -C -cTRANSLATORS --no-wrap --no-location -k -ktr -ktrNOOP --package-name=vdr-$(PLUGIN) --package-version=$(VERSION) --msgid-bugs-address='<reelbox-devel@mailings.reelbox.org>' -o $@ `ls $^`
+
+#%.po:
+%.po: $(I18Npot)
+	msgmerge -U --no-wrap --no-location --backup=none -q -N $@ $<
+	@touch $@
+
+$(I18Nmsgs): $(LOCDIR)/%/LC_MESSAGES/vdr-$(PLUGIN).mo: $(PODIR)/%.po
+	install -D -m644 $< $@
+
+.PHONY: i18n
+i18n: $(I18Nmo) $(I18Npot)
+
+install-i18n: $(I18Nmsgs)
+
+
+$(SOFILE): $(OBJS)
+	$(CXX) $(CXXFLAGS) -shared $(OBJS) $(LDFLAGS) -o $@
+
+install-lib: $(SOFILE)
+	install -D $^ $(LIBDIR)/$^.$(APIVERSION)
+
+install: install-lib install-i18n
+
+
+dist: $(I18Npo) clean
+	@rm -rf $(TMPDIR)/$(ARCHIVE)
+	@mkdir $(TMPDIR)/$(ARCHIVE)
+	@cp -a * $(TMPDIR)/$(ARCHIVE)
+	@rm -f $(TMPDIR)/$(ARCHIVE)/$(PLUGIN).kdevelop
+	@rm -f $(TMPDIR)/$(ARCHIVE)/$(PLUGIN).kdevelop.filelist
+	@rm -f $(TMPDIR)/$(ARCHIVE)/$(PLUGIN).kdevelop.pcs
+	@rm -f $(TMPDIR)/$(ARCHIVE)/$(PLUGIN).kdevses
+	@rm -rf $(TMPDIR)/$(ARCHIVE)/CVS
+	@rm -rf $(TMPDIR)/$(ARCHIVE)/Examples/CVS
+	@rm -rf $(TMPDIR)/$(ARCHIVE)/Patch/CVS
+	@ln -s $(ARCHIVE) $(TMPDIR)/$(PLUGIN)
+	@tar czf $(PACKAGE).tgz -C $(TMPDIR) $(ARCHIVE) $(PLUGIN)
+	@rm -rf $(TMPDIR)/$(ARCHIVE) $(TMPDIR)/$(PLUGIN)
+	@echo Distribution package created as $(PACKAGE).tgz
+
+clean:
+	@-rm -f $(PODIR)/*.mo $(PODIR)/*.pot
+	@-rm -f $(OBJS) $(MAIN) $(DEPFILE) *.so *.tgz core* *~
+#	@-rm -f $(LIBDIR)/libvdr-$(PLUGIN).so.$(APIVERSION)
+
+
+MAKECOMMON_IS_SOURCED = 1

@@ -1,0 +1,2 @@
+audio.output.speaker_arrangement:Pass Through
+engine.demux.strategy:XINE_DEMUX_CONTENT_STRATEGY
