@@ -1307,7 +1307,7 @@ void HdFbTrueColorOsd::new_osd() {
                                       int                &width,
                                       int                &height)
     {
-
+return false;
         Byte header[8];
 
         FILE *fp = fopen(path, "rb");
@@ -1356,14 +1356,22 @@ void HdFbTrueColorOsd::new_osd() {
         }
 
         png_read_info(png_ptr, info_ptr);
-
+#if PNG_LIBPNG_VER < 10400
         png_byte h = info_ptr->height;
         png_byte color_type = info_ptr->color_type;
-
+#else
+        png_byte h = png_get_image_height(png_ptr, info_ptr);
+        png_byte color_type = png_get_color_type(png_ptr, info_ptr);
+#endif
 //#define PRINT_COLOR_TYPE 1
 #ifdef PRINT_COLOR_TYPE
+#if PNG_LIBPNG_VER < 10400
         png_byte w = info_ptr->width;
         png_byte bit_depth = info_ptr->bit_depth;
+#else
+        png_byte w = png_get_image_width(png_ptr, info_ptr);
+        png_byte bit_depth = png_get_bit_depth(png_ptr, info_ptr);
+#endif
         printf("bit depth: %i - ", bit_depth);
         switch (color_type) {
                 case PNG_COLOR_TYPE_GRAY: puts("color_type: PNG_COLOR_TYPE_GRAY"); break;
@@ -1386,7 +1394,11 @@ void HdFbTrueColorOsd::new_osd() {
         rows = (png_bytep*) malloc(sizeof(png_bytep) * h);
         int y;
         for (y=0; y<h; y++) {
+#if PNG_LIBPNG_VER < 10400
             rows[y] = (png_byte*) malloc(info_ptr->rowbytes);
+#else
+            rows[y] = (png_byte*) malloc(png_get_rowbytes(png_ptr, info_ptr));
+#endif
         }
 
         png_read_image(png_ptr, rows);
