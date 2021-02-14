@@ -867,7 +867,6 @@ DestroyPixmap(pm);
                                       int                &width,
                                       int                &height)
     {
-return false;
         Byte header[8];
 
         FILE *fp = fopen(path, "rb");
